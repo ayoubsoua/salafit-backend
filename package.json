@@ -1,14 +1,14 @@
 {
-  "name": "salafit-backend",
+  "name": "whop-backend",
   "version": "1.0.0",
-  "description": "Salafit Whop checkout backend",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^3.3.2"
   }
 }
