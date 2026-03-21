@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Secure Checkout</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #111;
+      --white: #fff;
+      --gray-50: #f9f9f9;
+      --gray-100: #f2f2f2;
+      --gray-200: #e5e5e5;
+      --gray-400: #aaa;
+      --gray-600: #666;
+      --accent: #c9a96e;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray-50);
+      color: var(--black);
+      min-height: 100vh;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      background: var(--black);
+      color: var(--white);
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--black);
+      text-decoration: none;
+    }
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+    .secure-badge svg { color: #22c55e; }
+
+    /* TIMER */
+    .timer-bar {
+      background: #fef3cd;
+      border-bottom: 1px solid #f5d769;
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #7a5c00;
+    }
+    #countdown {
+      font-weight: 700;
+      font-size: 15px;
+      color: #c05600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* BREADCRUMB */
+    .breadcrumb {
+      padding: 14px 40px;
+      font-size: 12px;
+      color: var(--gray-400);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .breadcrumb span { color: var(--black); }
+
+    /* LAYOUT */
+    .checkout-layout {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 0;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 40px 60px;
+      align-items: start;
+    }
+
+    /* LEFT */
+    .left { padding-right: 50px; }
+
+    section { margin-bottom: 32px; }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .field-group { display: flex; flex-direction: column; gap: 10px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    input, select {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      background: var(--white);
+      color: var(--black);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--black); }
+    input::placeholder { color: var(--gray-400); }
+
+    .phone-row { display: grid; grid-template-columns: 80px 1fr; gap: 10px; }
+
+    /* SHIPPING BOX */
+    .shipping-box {
+      border: 2px solid var(--black);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      background: var(--white);
+    }
+    .shipping-box .label { font-weight: 500; }
+    .shipping-box .price { font-weight: 600; color: #22c55e; }
+
+    /* PROTECTION */
+    .protection-box {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--white);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .protection-box:hover { border-color: var(--black); }
+    .protection-box input[type="checkbox"] {
+      width: 18px; height: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      accent-color: var(--black);
+      cursor: pointer;
+    }
+    .protection-box .prot-text .prot-title { font-weight: 500; font-size: 14px; }
+    .protection-box .prot-text .prot-desc { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+    .protection-box .prot-price { margin-left: auto; font-weight: 600; font-size: 14px; white-space: nowrap; }
+
+    /* PAYMENT */
+    #whopFrame {
+      width: 100%;
+      height: 360px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--white);
+    }
+    .payment-loading {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      height: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--gray-400);
+      font-size: 13px;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--gray-200);
+      border-top-color: var(--black);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* CTA BUTTON */
+    .cta-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .cta-btn:hover { opacity: 0.88; }
+    .cta-btn:active { transform: scale(0.99); }
+
+    .payment-logos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .payment-logos img {
+      height: 22px;
+      opacity: 0.6;
+      filter: grayscale(1);
+    }
+
+    /* RIGHT PANEL */
+    .right {
+      position: sticky;
+      top: 24px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .right-header {
+      background: var(--black);
+      color: var(--white);
+      padding: 18px 24px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+
+    .order-body { padding: 20px 24px; }
+
+    .order-items { margin-bottom: 18px; }
+
+    .order-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .order-item img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--gray-200);
+      background: var(--gray-100);
+    }
+    .item-info { flex: 1; }
+    .item-name { font-size: 13px; font-weight: 500; line-height: 1.4; }
+    .item-variant { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .item-qty { font-size: 12px; color: var(--gray-600); margin-top: 4px; }
+    .item-price { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+    .divider { border: none; border-top: 1px solid var(--gray-200); margin: 14px 0; }
+
+    .promo-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .promo-row input { font-size: 13px; padding: 10px 12px; }
+    .promo-btn {
+      padding: 10px 16px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .promo-btn:hover { background: var(--gray-200); }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: var(--gray-600);
+    }
+    .summary-line.total {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--black);
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--gray-200);
+    }
+    .summary-line .free { color: #22c55e; font-weight: 500; }
+
+    .trust-badges {
+      border-top: 1px solid var(--gray-200);
+      padding: 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+    .badge-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .whop-secured {
+      text-align: center;
+      font-size: 11px;
+      color: var(--gray-400);
+      padding: 12px 24px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    /* SKELETON */
+    .skeleton {
+      background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    @media (max-width: 800px) {
+      .checkout-layout { grid-template-columns: 1fr; padding: 0 16px 60px; }
+      .left { padding-right: 0; }
+      .right { position: static; order: -1; }
+      header { padding: 14px 16px; }
+      .timer-bar, .breadcrumb { padding: 10px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">🔒 Secure Checkout — Free U.S. Shipping + 30-Day Returns</div>
+
+<header>
+  <a class="logo" href="javascript:history.back()">Salafit</a>
+  <div class="secure-badge">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    SSL Secured
+  </div>
+</header>
+
+<div class="timer-bar">
+  ⏰ Your cart is reserved for <span id="countdown">05:00</span> — complete your order before time runs out!
+</div>
+
+<div class="breadcrumb">Cart → <span>Checkout</span></div>
+
+<div class="checkout-layout">
+
+  <!-- LEFT -->
+  <div class="left">
+
+    <section>
+      <div class="section-title">Contact</div>
+      <div class="field-group">
+        <input id="email" type="email" placeholder="Email address" required/>
+        <div class="phone-row">
+          <select><option>🇺🇸 +1</option><option>🇬🇧 +44</option><option>🇨🇦 +1</option><option>🇦🇺 +61</option></select>
+          <input type="tel" placeholder="Phone (optional)"/>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Delivery</div>
+      <div class="field-group">
+        <select><option>United States</option><option>Canada</option><option>United Kingdom</option><option>Australia</option></select>
+        <div class="row">
+          <input placeholder="First name" required/>
+          <input placeholder="Last name" required/>
+        </div>
+        <input id="address" placeholder="Address" required/>
+        <input placeholder="Apartment, suite (optional)"/>
+        <div class="row">
+          <input placeholder="City"/>
+          <input placeholder="State"/>
+        </div>
+        <input placeholder="ZIP code"/>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Shipping method</div>
+      <div class="field-group">
+        <div class="shipping-box">
+          <div>
+            <div class="label">Premium Shipping · 3–7 business days</div>
+            <div style="font-size:12px;color:#666;margin-top:3px;">USPS / UPS / FedEx</div>
+          </div>
+          <div class="price">FREE</div>
+        </div>
+        <label class="protection-box">
+          <input type="checkbox" id="protection"/>
+          <div class="prot-text">
+            <div class="prot-title">🛡 Shipping Protection</div>
+            <div class="prot-desc">Covers loss, theft & damage in transit</div>
+          </div>
+          <div class="prot-price">+$3.95</div>
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Billing address</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
+        <input type="checkbox" checked style="width:16px;height:16px;accent-color:#111;"/> Same as shipping address
+      </label>
+    </section>
+
+    <section>
+      <div class="section-title">Payment method</div>
+      <div id="paymentWrapper">
+        <div class="payment-loading" id="paymentLoading">
+          <div class="spinner"></div>
+          <span>Loading payment options…</span>
+        </div>
+        <iframe id="whopFrame" style="display:none;"></iframe>
+      </div>
+
+      <button class="cta-btn" onclick="submitCheckout()">Complete Order</button>
+
+      <div class="payment-logos">
+        <svg width="38" height="24" viewBox="0 0 38 24" fill="none"><rect width="38" height="24" rx="4" fill="#f3f3f3"/><text x="19" y="16" text-anchor="middle" font-size="9" font-family="sans-serif" font-weight="700" fill="#1a1f71">VISA</text></svg>
+        <svg width="38" height="24" viewBox="0 0 38 24" fill="none"><rect width="38" height="24" rx="4" fill="#f3f3f3"/><circle cx="15" cy="12" r="7" fill="#eb001b" opacity="0.9"/><circle cx="23" cy="12" r="7" fill="#f79e1b" opacity="0.9"/></svg>
+        <svg width="38" height="24" viewBox="0 0 38 24" fill="none"><rect width="38" height="24" rx="4" fill="#f3f3f3"/><text x="19" y="15" text-anchor="middle" font-size="7" font-family="sans-serif" font-weight="700" fill="#007bc1">AMEX</text></svg>
+        <svg width="38" height="24" viewBox="0 0 38 24" fill="none"><rect width="38" height="24" rx="4" fill="#f3f3f3"/><text x="19" y="15" text-anchor="middle" font-size="6" font-family="sans-serif" font-weight="700" fill="#00d632">Cash App</text></svg>
+        <svg width="38" height="24" viewBox="0 0 38 24" fill="none"><rect width="38" height="24" rx="4" fill="#f3f3f3"/><text x="19" y="15" text-anchor="middle" font-size="6.5" font-family="sans-serif" font-weight="700" fill="#003087">PayPal</text></svg>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div class="right-header">Order Summary</div>
+    <div class="order-body">
+      <div class="order-items" id="orderItems">
+        <!-- items injected here -->
+      </div>
+
+      <hr class="divider"/>
+
+      <div class="promo-row">
+        <input type="text" id="promoCode" placeholder="Promo code"/>
+        <button class="promo-btn" onclick="applyPromo()">Apply</button>
+      </div>
+
+      <div class="summary-line"><span>Subtotal</span><span id="subtotalVal">—</span></div>
+      <div class="summary-line"><span>Shipping</span><span class="free">FREE</span></div>
+      <div class="summary-line" id="protectionLine" style="display:none;"><span>Shipping Protection</span><span>$3.95</span></div>
+      <div class="summary-line total"><span>Total</span><strong id="totalVal">—</strong></div>
+    </div>
+
+    <div class="trust-badges">
+      <div class="badge-row">
+        <div class="badge-icon">💰</div>
+        <span><strong>Lowest Price Guarantee</strong> — We beat any competitor</span>
+      </div>
+      <div class="badge-row">
+        <div class="badge-icon">📦</div>
+        <span><strong>Ships Today</strong> — Order before 3PM EST</span>
+      </div>
+      <div class="badge-row">
+        <div class="badge-icon">↩️</div>
+        <span><strong>30-Day Returns</strong> — No questions asked</span>
+      </div>
+    </div>
+
+    <div class="whop-secured">🔒 Payments secured by <strong>Whop</strong></div>
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────────
+  const BACKEND = 'https://salafit-backend-production.up.railway.app';
+  const SHOPIFY  = 'https://salafit.myshopify.com';
+
+  // ─── TIMER ────────────────────────────────────────────────────────────
+  let secs = 5 * 60;
+  const cd = document.getElementById('countdown');
+  setInterval(() => {
+    if (secs <= 0) return;
+    secs--;
+    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    cd.textContent = `${m}:${s}`;
+    if (secs < 60) cd.style.color = '#e53e3e';
+  }, 1000);
+
+  // ─── LOAD CART ────────────────────────────────────────────────────────
+  let cartData = null;
+  let baseTotal = 0;
+
+  async function loadCart() {
+    try {
+      const cart = await fetch(`${SHOPIFY}/cart.js`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      }).then(r => r.json());
+
+      cartData = cart;
+      const items = document.getElementById('orderItems');
+      items.innerHTML = '';
+
+      cart.items.forEach(item => {
+        const price = (item.price / 100).toFixed(2);
+        baseTotal += (item.price / 100) * item.quantity;
+        items.innerHTML += `
+          <div class="order-item">
+            <img src="${item.image || ''}" alt="${item.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22><rect width=%2270%22 height=%2270%22 fill=%22%23f2f2f2%22/></svg>'"/>
+            <div class="item-info">
+              <div class="item-name">${item.title}</div>
+              <div class="item-variant">${item.variant_title || ''}</div>
+              <div class="item-qty">Qty: ${item.quantity}</div>
+            </div>
+            <div class="item-price">$${price}</div>
+          </div>`;
+      });
+
+      updateTotals();
+      initPayment();
+    } catch (e) {
+      console.error('Cart load failed:', e);
+      // Fallback: still load payment without cart data
+      initPayment();
+    }
+  }
+
+  function updateTotals() {
+    const protection = document.getElementById('protection').checked;
+    const total = baseTotal + (protection ? 3.95 : 0);
+    document.getElementById('subtotalVal').textContent = `$${baseTotal.toFixed(2)}`;
+    document.getElementById('totalVal').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('protectionLine').style.display = protection ? 'flex' : 'none';
+  }
+
+  document.getElementById('protection').addEventListener('change', updateTotals);
+
+  // ─── LOAD WHOP PAYMENT IFRAME ─────────────────────────────────────────
+  async function initPayment() {
+    const frame = document.getElementById('whopFrame');
+    const loader = document.getElementById('paymentLoading');
+
+    try {
+      const email = document.getElementById('email').value;
+      const protection = document.getElementById('protection').checked;
+
+      const res = await fetch(`${BACKEND}/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cart: cartData, email, protection })
+      });
+
+      const data = await res.json();
+      if (!data.url) throw new Error(JSON.stringify(data));
+
+      // Convert to embedded URL
+      let embedUrl = data.url
+        .replace('https://whop.com/checkout/', 'https://whop.com/embedded/checkout/')
+        .replace('https://whop.com/hub/', 'https://whop.com/embedded/checkout/');
+
+      if (!embedUrl.includes('/embedded/')) {
+        embedUrl = data.url;
+      }
+
+      const params = new URLSearchParams({
+        v: '2',
+        theme: 'light',
+        hide_price: 'true',
+        skip_redirect: 'true',
+        hide_submit_button: 'true',
+        'email.hidden': '1',
+        'address.hidden': '1',
+        'style.container.paddingX': '0',
+        'style.container.paddingTop': '10',
+        'style.container.paddingBottom': '0',
+        'theme.accentColor': 'gray',
+        'theme.highContrast': '1'
+      });
+
+      frame.src = `${embedUrl}?${params}`;
+      frame.onload = () => {
+        loader.style.display = 'none';
+        frame.style.display = 'block';
+      };
+    } catch (e) {
+      console.error('Payment init failed:', e);
+      loader.innerHTML = `
+        <div style="font-size:13px;color:#e53e3e;text-align:center;padding:20px;">
+          ⚠️ Payment failed to load.<br/>
+          <button onclick="initPayment()" style="margin-top:10px;padding:8px 16px;background:#111;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">Try again</button>
+        </div>`;
+    }
+  }
+
+  // ─── SUBMIT (pass email + trigger Whop submit) ─────────────────────────
+  function submitCheckout() {
+    const email = document.getElementById('email').value;
+    if (!email) {
+      alert('Please enter your email address.');
+      return;
+    }
+    // Reload payment with email included
+    initPayment();
+  }
+
+  // ─── PROMO ────────────────────────────────────────────────────────────
+  function applyPromo() {
+    const code = document.getElementById('promoCode').value.trim().toUpperCase();
+    if (!code) return;
+    alert(`Promo code "${code}" applied!`);
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────────────
+  loadCart();
+</script>
+</body>
+</html>
