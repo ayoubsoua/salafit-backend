@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,19 +19,38 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use(express.static(__dirname));
 
 const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_PLAN_ID = process.env.WHOP_PLAN_ID;
-const SHOPIFY_DOMAIN = process.env.SHOPIFY_DOMAIN || "salafit.myshopify.com";
+
+// Find checkout.html wherever it is
+function findCheckout() {
+  const candidates = [
+    path.join(__dirname, "checkout.html"),
+    "/app/checkout.html",
+    path.join(process.cwd(), "checkout.html"),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      console.log("Found checkout.html at:", p);
+      return p;
+    }
+  }
+  console.error("checkout.html NOT FOUND. Searched:", candidates);
+  return null;
+}
 
 // Serve checkout page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "checkout.html"));
+  const file = findCheckout();
+  if (!file) return res.status(404).send("checkout.html not found. Check deployment.");
+  res.sendFile(file);
 });
 
 app.get("/checkout", (req, res) => {
-  res.sendFile(path.join(__dirname, "checkout.html"));
+  const file = findCheckout();
+  if (!file) return res.status(404).send("checkout.html not found. Check deployment.");
+  res.sendFile(file);
 });
 
 // Health check
