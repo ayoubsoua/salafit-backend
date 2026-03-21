@@ -303,14 +303,9 @@ const CHECKOUT_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-app.get("/", (req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.send(CHECKOUT_HTML);
-});
-
-app.get("/checkout", (req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.send(CHECKOUT_HTML);
+app.get(["/", "/checkout"], (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.status(200).send(CHECKOUT_HTML);
 });
 
 app.get("/health", (req, res) => {
