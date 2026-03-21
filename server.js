@@ -1,46 +1,39 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
-
 const app = express();
+
 app.use(express.json());
-app.use(cors({
-  origin: ['https://salafit.myshopify.com', 'https://www.salafit.com', 'https://salafit.com'],
-  credentials: true
-}));
+app.use(cors());
 
 const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_PLAN_ID = process.env.WHOP_PLAN_ID;
 
-// Health check
-app.get('/', (req, res) => {
-  res.json({ status: 'Salafit backend running!' });
-});
+const INFLUENCER_SHIPPING = 34.98; // £34.98 DHL fixed
 
-// Create Whop checkout session
 app.post('/create', async (req, res) => {
   try {
-    const { email, cart, protection } = req.body;
+    const { cart, email, protection, influencer } = req.body;
 
-    if (!cart || !cart.items || cart.items.length === 0) {
-      return res.status(400).json({ error: 'Cart is empty' });
+    let totalAmount;
+
+    if (influencer) {
+      // Influencer: products FREE, pay only DHL shipping
+      totalAmount = INFLUENCER_SHIPPING;
+      if (protection) totalAmount += 3.95;
+      console.log(`Influencer order — shipping only: £${totalAmount}`);
+    } else {
+      // Normal customer: full cart price
+      let totalCents = cart.items.reduce((sum, item) => {
+        return sum + (item.price * item.quantity);
+      }, 0);
+      if (protection) totalCents += 395;
+      totalAmount = totalCents / 100;
+      console.log(`Normal order — Total: $${totalAmount.toFixed(2)}`);
     }
 
-    // Calculate total from cart
-    let total = cart.items.reduce((sum, item) => {
-      return sum + (item.price / 100) * item.quantity;
-    }, 0);
+    const cartSummary = cart.items.map(i => i.title).join(', ');
 
-    // Add shipping protection if selected
-    if (protection) total += 3.95;
-
-    // Round to 2 decimal places
-    total = Math.round(total * 100) / 100;
-
-    console.log(`Creating Whop session for ${email} - Total: $${total}`);
-
-    // Create Whop checkout session
-    const whopRes = await fetch('https://api.whop.com/api/v2/checkout_sessions', {
+    const response = await fetch('https://api.whop.com/api/v2/checkout_sessions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${WHOP_API_KEY}`,
@@ -50,55 +43,41 @@ app.post('/create', async (req, res) => {
         plan_id: WHOP_PLAN_ID,
         email: email || undefined,
         metadata: {
-          cart_items: cart.items.map(i => i.title).join(', '),
-          cart_total: total,
+          cart_items: cartSummary,
+          cart_total: totalAmount.toFixed(2),
+          is_influencer: influencer ? 'yes' : 'no',
           shopify_cart_token: cart.token || ''
         }
       })
     });
 
-    const whopData = await whopRes.json();
-    console.log('Whop response:', whopData);
+    const text = await response.text();
+    console.log('Whop response:', text);
 
-    if (!whopData.purchase_url && !whopData.url) {
-      return res.status(500).json({ error: 'Failed to create Whop session', details: whopData });
-    }
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) { return res.status(500).json({ error: 'Invalid response from Whop' }); }
 
-    res.json({
-      url: whopData.purchase_url || whopData.url,
-      session_id: whopData.id
-    });
+    if (!response.ok) return res.status(500).json({ error: data });
+
+    const checkoutUrl = data.purchase_url || data.url;
+    if (!checkoutUrl) return res.status(500).json({ error: 'No checkout URL returned', data });
+
+    res.json({ url: checkoutUrl });
 
   } catch (err) {
-    console.error('Error creating checkout:', err);
+    console.error('Server error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Whop webhook - called when payment is successful
-app.post('/webhook', async (req, res) => {
-  try {
-    const event = req.body;
-    console.log('Whop webhook received:', event.action);
-
-    if (event.action === 'payment.succeeded') {
-      const metadata = event.data?.metadata || {};
-      console.log('Payment succeeded! Cart:', metadata.cart_items, 'Total: $' + metadata.cart_total);
-
-      // Here you can:
-      // 1. Send confirmation email
-      // 2. Create order in Shopify via API
-      // 3. Notify yourself via Slack/email
-    }
-
-    res.json({ received: true });
-  } catch (err) {
-    console.error('Webhook error:', err);
-    res.status(500).json({ error: err.message });
-  }
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    plan_id: WHOP_PLAN_ID ? 'set' : 'MISSING',
+    api_key: WHOP_API_KEY ? 'set' : 'MISSING'
+  });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Salafit backend running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
