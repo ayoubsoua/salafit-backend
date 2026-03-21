@@ -49,11 +49,10 @@ app.post('/create', async (req, res) => {
       body: JSON.stringify({
         plan_id: WHOP_PLAN_ID,
         email: email || undefined,
-        price: Math.round(total * 100), // Whop uses cents
         metadata: {
           cart_items: cart.items.map(i => i.title).join(', '),
           cart_total: total,
-          shopify_cart_token: cart.token
+          shopify_cart_token: cart.token || ''
         }
       })
     });
