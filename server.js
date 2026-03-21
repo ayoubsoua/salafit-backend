@@ -8,7 +8,7 @@ app.use(cors());
 const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_PLAN_ID = process.env.WHOP_PLAN_ID;
 
-const INFLUENCER_SHIPPING = 34.98; // £34.98 DHL fixed
+const INFLUENCER_SHIPPING = 2.00; // test amount
 
 app.post('/create', async (req, res) => {
   try {
