@@ -32,12 +32,11 @@ app.post("/create", async (req, res) => {
     }
     if (protection) total += 3.95;
     if (total === 0) total = 1;
-    total = Math.round(total * 100) / 100;
+    total = Math.round(total * 100); // convert to cents
 
-    console.log(`Creating session - Total: $${total}`);
+    console.log(`Creating session - Total: $${total / 100}`);
 
-    // Try Whop v5 API
-    const response = await fetch("https://api.whop.com/v5/checkout/sessions", {
+    const response = await fetch("https://api.whop.com/api/v2/checkout_sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${WHOP_API_KEY}`,
@@ -45,14 +44,22 @@ app.post("/create", async (req, res) => {
       },
       body: JSON.stringify({
         plan_id: WHOP_PLAN_ID,
-        email: email || undefined,
+        price: {
+          plan_type: "one_time",
+          initial_price: total,
+        },
+        redirect_url: "https://salafit.myshopify.com/pages/thank-you",
+        metadata: {
+          email: email || "",
+          items: cart?.items?.map(i => i.title).join(", ") || ""
+        }
       }),
     });
 
     const data = await response.json();
     console.log("Whop response:", JSON.stringify(data));
 
-    const url = data.purchase_url || data.url || data.checkout_url;
+    const url = data.purchase_url || data.url;
     if (!url) {
       return res.status(400).json({ error: data });
     }
