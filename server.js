@@ -48,10 +48,12 @@ app.post("/create", async (req, res) => {
     if (total === 0) total = 1;
     total = Math.round(total * 100) / 100;
 
-    console.log(`Creating checkout config - Total: $${total}`);
+    const WHOP_PLAN_ID = process.env.WHOP_PLAN_ID || "plan_xQ7ZVfkpfVcJM";
 
-    // Create checkout configuration using correct Whop API
-    const response = await fetch("https://api.whop.com/api/v2/checkout_configurations", {
+    console.log(`[/create] email=${email} total=$${total} plan=${WHOP_PLAN_ID}`);
+
+    // Create checkout session using correct Whop API
+    const response = await fetch(`https://api.whop.com/api/v2/checkout_configurations`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${WHOP_API_KEY}`,
@@ -60,29 +62,27 @@ app.post("/create", async (req, res) => {
       body: JSON.stringify({
         company_id: WHOP_COMPANY_ID,
         plan: {
+          plan_id: WHOP_PLAN_ID,
           initial_price: total,
           plan_type: "one_time",
         },
         metadata: {
-          cart_total: total,
-          cart_items: cart?.items?.map(i => i.title).join(", ") || "",
-          customer_email: email || ""
+          cart_total_cents: Math.round(total * 100),
+          items: cart?.items?.map(i => `${i.title} x${i.quantity}`).join(", ") || "",
         }
       }),
     });
 
     const data = await response.json();
-    console.log("Whop response:", JSON.stringify(data));
+    console.log("[Whop response]", JSON.stringify(data));
 
-    if (data.id) {
-      // Return the session ID to be used in the embedded checkout
-      res.json({ 
-        session_id: data.id,
-        url: `https://whop.com/embedded/checkout/${data.id}/`
-      });
-    } else {
+    const url = data.purchase_url || data.url || (data.id ? `https://whop.com/checkout/${WHOP_PLAN_ID}/?session=${data.id}` : null);
+
+    if (!url) {
       return res.status(400).json({ error: data });
     }
+
+    res.json({ url });
 
   } catch (err) {
     console.error(err);
